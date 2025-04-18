@@ -1,0 +1,15 @@
+# Dev environment
+pip
+autopep8
+
+# App
+Flask==2.3.3
+flask-sqlalchemy==3.1.1
+flask-login==0.6.2
+flask-mail==0.9.1
+google-auth-oauthlib==1.1.0
+google-auth==2.22.0
+itsdangerous==2.1.2
+Werkzeug==2.3.7
+psycopg2-binary==2.9.7
+python-dotenv==1.0.0

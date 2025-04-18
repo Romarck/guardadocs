@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Início{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <h1 class="display-4 mb-4">Bem-vindo ao Guarda Docs</h1>
+        <p class="lead">
+            Uma plataforma segura para gerenciar seus documentos acadêmicos.
+        </p>
+        
+        {% if not current_user.is_authenticated %}
+        <div class="mt-5">
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg mx-2">Registrar</a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg mx-2">Login</a>
+        </div>
+        {% else %}
+        <div class="mt-5">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">Ir para o Dashboard</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Armazenamento Seguro</h5>
+                <p class="card-text">Seus documentos são armazenados com segurança e podem ser acessados de qualquer lugar.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Fácil Compartilhamento</h5>
+                <p class="card-text">Compartilhe seus documentos com outros usuários de forma simples e segura.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Organização Eficiente</h5>
+                <p class="card-text">Mantenha seus documentos organizados com nossa interface intuitiva.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
