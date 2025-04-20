@@ -5,6 +5,7 @@ from starlette.responses import Response
 from starlette.datastructures import Headers
 import json
 import logging
+import asyncio
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -44,6 +45,8 @@ class Handler(BaseHTTPRequestHandler):
                 "raw_path": self.path.encode(),
             }
 
+            logger.info(f"Created scope: {json.dumps(scope, default=str)}")
+
             async def receive():
                 body = self._get_body()
                 logger.info(f"Received body: {body}")
@@ -59,8 +62,12 @@ class Handler(BaseHTTPRequestHandler):
                 elif message["type"] == "http.response.body":
                     self.wfile.write(message["body"])
 
-            # Call FastAPI directly with receive and send
-            app(scope, receive, send)
+            # Create event loop and run the app
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(app(scope, receive, send))
+            loop.close()
+
         except Exception as e:
             logger.error(f"Error handling request: {str(e)}", exc_info=True)
             self.send_response(500)
