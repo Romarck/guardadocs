@@ -3,17 +3,22 @@ main = "app/worker.js"
 compatibility_date = "2024-02-15"
 
 [build]
-command = "pip install -r requirements-cloudflare.txt"
+command = "pip install -r requirements.txt && python -m hypercorn app.main:app"
 publish = "app"
 
 [build.upload]
 format = "service-worker"
 
+[build.environment]
+PYTHON_VERSION = "3.11"
+
 [site]
-bucket = "./app"
+bucket = "./static"
+entry-point = "app/main.py"
 
 [env.production]
-name = "guardadocs"
+name = "guardadocs-app"
+route = "guardadocs-app.pages.dev/*"
 workers_dev = true
 
 [[env.production.services]]
