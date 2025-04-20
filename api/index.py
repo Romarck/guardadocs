@@ -8,16 +8,16 @@ class Handler(BaseHTTPRequestHandler):
         super().__init__(*args, **kwargs)
 
     def do_GET(self):
-        self.handler(self, self.path, self.headers)
+        self.handler(self.path, self.headers)
 
     def do_POST(self):
-        self.handler(self, self.path, self.headers)
+        self.handler(self.path, self.headers)
 
     def do_PUT(self):
-        self.handler(self, self.path, self.headers)
+        self.handler(self.path, self.headers)
 
     def do_DELETE(self):
-        self.handler(self, self.path, self.headers)
+        self.handler(self.path, self.headers)
 
 handler = Handler
 
