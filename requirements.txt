@@ -2,6 +2,7 @@
 fastapi==0.109.0
 pydantic==2.6.1
 hypercorn==0.17.3
+uvicorn==0.27.1
 
 # Database
 sqlalchemy==2.0.27
@@ -25,3 +26,6 @@ httpx>=0.26.0,<0.29.0
 
 # Environment variables
 python-dotenv==1.0.1
+
+# Cloudflare
+cloudflare-pages==0.1.0
