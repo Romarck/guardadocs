@@ -18,7 +18,6 @@
   ],
   "env": {
     "PYTHONPATH": ".",
-    "PYTHONUNBUFFERED": "1",
-    "ASGI_APPLICATION": "api.index:handler"
+    "PYTHONUNBUFFERED": "1"
   }
 } 

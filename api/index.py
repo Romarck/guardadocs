@@ -1,17 +1,25 @@
 from app.main import app
-from starlette.types import ASGIApp, Message, Receive, Scope, Send
+from http.server import BaseHTTPRequestHandler
+from mangum import Mangum
 
-async def handler(scope: Scope, receive: Receive, send: Send) -> None:
-    if scope["type"] == "lifespan":
-        while True:
-            message = await receive()
-            if message["type"] == "lifespan.startup":
-                await app(scope, receive, send)
-            if message["type"] == "lifespan.shutdown":
-                await app(scope, receive, send)
-                return
-    else:
-        await app(scope, receive, send)
+class Handler(BaseHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        self.handler = Mangum(app)
+        super().__init__(*args, **kwargs)
+
+    def do_GET(self):
+        self.handler(self, self.path, self.headers)
+
+    def do_POST(self):
+        self.handler(self, self.path, self.headers)
+
+    def do_PUT(self):
+        self.handler(self, self.path, self.headers)
+
+    def do_DELETE(self):
+        self.handler(self, self.path, self.headers)
+
+handler = Handler
 
 # For local development
 if __name__ == "__main__":
