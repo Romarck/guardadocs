@@ -4,6 +4,5 @@ from mangum import Mangum
 # Configure Mangum handler
 handler = Mangum(
     app,
-    lifespan="off",
-    strip_stage_path=True
+    lifespan="off"
 ) 
