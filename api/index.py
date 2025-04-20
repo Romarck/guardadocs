@@ -1,8 +1,16 @@
 from app.main import app
-from mangum import Mangum
+from fastapi import Request
+from fastapi.responses import JSONResponse
 
-# Create handler for Vercel
-handler = Mangum(app)
+async def handler(request: Request):
+    try:
+        response = await app(request.scope, request.receive, request.send)
+        return response
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": str(e)}
+        )
 
 # For local development
 if __name__ == "__main__":
