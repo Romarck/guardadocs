@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
+    DATABASE_URL: Optional[str] = None
     SQLALCHEMY_DATABASE_URI: Optional[str] = None
     
     # Security
@@ -70,10 +71,13 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
-        if not self.SQLALCHEMY_DATABASE_URI and self.POSTGRES_DB:
-            self.SQLALCHEMY_DATABASE_URI = (
+        if not self.DATABASE_URL and self.POSTGRES_DB:
+            self.DATABASE_URL = (
                 f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
                 f"@{self.POSTGRES_SERVER}/{self.POSTGRES_DB}"
             )
+        
+        if not self.SQLALCHEMY_DATABASE_URI:
+            self.SQLALCHEMY_DATABASE_URI = self.DATABASE_URL
 
 settings = Settings() 
