@@ -1,3 +1,7 @@
+name = "guardadocs-app"
+main = "app/worker.js"
+compatibility_date = "2024-02-15"
+
 [build]
 command = "pip install -r requirements-cloudflare.txt"
 
@@ -11,5 +15,6 @@ bucket = "./app"
 name = "guardadocs"
 workers_dev = true
 
-[env.production.build]
-command = "pip install -r requirements-cloudflare.txt && python -m hypercorn app.main:app --bind 0.0.0.0:8000" 
+[[env.production.services]]
+name = "python-app"
+command = "python -m hypercorn app.main:app --bind 127.0.0.1:8000" 
