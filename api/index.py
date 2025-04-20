@@ -46,17 +46,8 @@ class Handler(BaseHTTPRequestHandler):
             elif message["type"] == "http.response.body":
                 self.wfile.write(message["body"])
 
-        # Create request and get response
-        request = Request(scope, receive, send)
-        response = app(request)
-
-        # Send response
-        if isinstance(response, Response):
-            self.send_response(response.status_code)
-            for header, value in response.headers.items():
-                self.send_header(header, value)
-            self.end_headers()
-            self.wfile.write(response.body)
+        # Call FastAPI directly with receive and send
+        app(scope, receive, send)
 
     def _get_body(self):
         content_length = int(self.headers.get("Content-Length", 0))
