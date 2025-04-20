@@ -8,24 +8,15 @@
         "maxLambdaSize": "15mb",
         "runtime": "python3.11"
       }
-    },
-    {
-      "src": "app/static/**",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/static/(.*)",
-      "dest": "/app/static/$1"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/api/index.py"
+      "dest": "api/index.py"
     }
   ],
   "env": {
-    "PYTHONPATH": ".",
-    "MAX_WORKERS": "1"
+    "PYTHONPATH": "."
   }
 } 

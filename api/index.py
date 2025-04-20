@@ -1,8 +1,10 @@
 from app.main import app
 from mangum import Mangum
 
-# Configure Mangum handler
-handler = Mangum(
-    app,
-    lifespan="off"
-) 
+# Create handler for AWS Lambda
+handler = Mangum(app)
+
+# For local development
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000) 
