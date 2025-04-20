@@ -8,9 +8,21 @@
         "maxLambdaSize": "15mb",
         "runtime": "python3.11"
       }
+    },
+    {
+      "src": "app/static/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
+    {
+      "src": "/favicon.ico",
+      "dest": "/app/static/favicon.ico"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "/app/static/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "/api/index.py"
