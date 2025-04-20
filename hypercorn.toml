@@ -1,0 +1,22 @@
+# Configurações do servidor
+bind = ["0.0.0.0:8000"]
+workers = 4
+worker_class = "asyncio"
+reload = true
+
+# Configurações de logging
+access_log_format = '%(h)s %(r)s %(s)s %(b)s %(D)s'
+accesslog = "-"
+errorlog = "-"
+loglevel = "INFO"
+
+# Configurações de SSL (opcional)
+# ssl_keyfile = "key.pem"
+# ssl_certfile = "cert.pem"
+
+# Configurações de timeout
+keep_alive_timeout = 120
+graceful_timeout = 120
+
+# Configurações de buffer
+max_body_size = 10485760  # 10MB 

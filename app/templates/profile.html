@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Perfil - GuardaDocs{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Informações do Perfil -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-user-circle fa-4x text-primary"></i>
+                        <h3 class="mt-3">{{ user.full_name }}</h3>
+                        <p class="text-muted">{{ user.email }}</p>
+                    </div>
+                    
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-file me-2"></i>Total de Documentos</span>
+                            <span class="badge bg-primary rounded-pill">{{ documents|length }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-calendar me-2"></i>Membro desde</span>
+                            <span class="text-muted">{{ user.created_at.strftime('%d/%m/%Y') }}</span>
+                        </div>
+                        {% if user.is_admin %}
+                        <div class="list-group-item">
+                            <span class="badge bg-primary">
+                                <i class="fas fa-user-shield me-1"></i>Administrador
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documentos Recentes -->
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Documentos Recentes</h5>
+                </div>
+                <div class="card-body">
+                    {% if documents %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Tamanho</th>
+                                    <th>Data</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doc in documents[:5] %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-file me-2 text-primary"></i>
+                                        {{ doc.original_filename }}
+                                    </td>
+                                    <td>{{ (doc.file_size / 1024)|round|int }} KB</td>
+                                    <td>{{ doc.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="/api/v1/documents/{{ doc.id }}/download" 
+                                               class="btn btn-outline-primary"
+                                               title="Baixar">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            <button onclick="deleteDocument({{ doc.id }})"
+                                                    class="btn btn-outline-danger"
+                                                    title="Excluir">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if documents|length > 5 %}
+                    <div class="text-center mt-3">
+                        <a href="/documents" class="btn btn-outline-primary">
+                            <i class="fas fa-list me-2"></i>Ver Todos
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-file-upload fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Você ainda não possui documentos.</p>
+                        <a href="/" class="btn btn-primary">
+                            <i class="fas fa-upload me-2"></i>Fazer Upload
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function deleteDocument(documentId) {
+    if (confirm('Tem certeza que deseja excluir este documento?')) {
+        try {
+            const response = await fetch(`/api/v1/documents/${documentId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                const data = await response.json();
+                alert(data.detail || 'Erro ao excluir documento');
+            }
+        } catch (error) {
+            alert('Erro ao processar a requisição');
+        }
+    }
+}
+</script>
+{% endblock %} 

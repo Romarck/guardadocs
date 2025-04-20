@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Meus Documentos{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Meus Documentos</h2>
+    
+    <!-- Upload Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Enviar Novo Documento</h5>
+            <form action="/api/v1/documents/" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="file" class="form-label">Arquivo</label>
+                    <input type="file" class="form-control" id="file" name="file" required>
+                </div>
+                <div class="mb-3">
+                    <label for="title" class="form-label">Título (opcional)</label>
+                    <input type="text" class="form-control" id="title" name="title">
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Descrição (opcional)</label>
+                    <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Enviar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Documents List -->
+    {% if documents %}
+    <div class="row">
+        {% for doc in documents %}
+        <div class="col-md-6 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        {% if doc.title %}
+                            {{ doc.title }}
+                        {% else %}
+                            {{ doc.original_filename }}
+                        {% endif %}
+                    </h5>
+                    {% if doc.description %}
+                    <p class="card-text text-muted">{{ doc.description }}</p>
+                    {% endif %}
+                    <p class="card-text">
+                        <small class="text-muted">
+                            Tamanho: {{ "%.2f"|format(doc.file_size / 1024) }} KB<br>
+                            Enviado em: {{ doc.created_at.strftime('%d/%m/%Y %H:%M') }}
+                        </small>
+                    </p>
+                    <div class="btn-group">
+                        <a href="/api/v1/documents/{{ doc.id }}/download" class="btn btn-primary btn-sm">
+                            <i class="fas fa-download"></i> Baixar
+                        </a>
+                        <button onclick="deleteDocument({{ doc.id }})" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash"></i> Excluir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        Você ainda não tem documentos. Use o formulário acima para enviar seu primeiro documento.
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.querySelector('form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    try {
+        const formData = new FormData(this);
+        const response = await fetch('/api/v1/documents/', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            window.location.href = '/';
+        } else {
+            const error = await response.json();
+            alert(error.detail || 'Erro ao enviar documento');
+        }
+    } catch (error) {
+        alert('Erro ao enviar documento');
+    }
+});
+
+async function deleteDocument(id) {
+    if (confirm('Tem certeza que deseja excluir este documento?')) {
+        try {
+            const response = await fetch(`/api/v1/documents/${id}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Erro ao excluir o documento');
+            }
+        } catch (error) {
+            alert('Erro ao excluir o documento');
+        }
+    }
+}
+</script>
+{% endblock %} 

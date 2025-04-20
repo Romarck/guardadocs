@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Documentos do Usuário - GuardaDocs{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">Documentos do Usuário</h1>
+            <p class="text-muted mb-0">{{ target_user.full_name }} ({{ target_user.email }})</p>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-info me-3">
+                <i class="fas fa-file"></i> {{ documents|length }} documentos
+            </span>
+            <a href="/admin" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <div class="card shadow">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0">
+                <i class="fas fa-file-alt me-2"></i>Lista de Documentos
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if documents %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Título</th>
+                            <th>Tamanho</th>
+                            <th>Data de Upload</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in documents %}
+                        <tr>
+                            <td>
+                                <i class="fas fa-file me-2 text-primary"></i>
+                                {{ doc.original_filename }}
+                            </td>
+                            <td>{{ doc.title or "Sem título" }}</td>
+                            <td>{{ (doc.file_size / 1024)|round|int }} KB</td>
+                            <td>{{ doc.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/api/v1/documents/{{ doc.id }}/download" 
+                                       class="btn btn-outline-primary"
+                                       title="Baixar">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    <button onclick="deleteDocument({{ doc.id }})"
+                                            class="btn btn-outline-danger"
+                                            title="Excluir">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                <p class="text-muted mb-0">Este usuário ainda não possui documentos.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function deleteDocument(documentId) {
+    if (confirm('Tem certeza que deseja excluir este documento?')) {
+        try {
+            const response = await fetch(`/admin/documents/${documentId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                const data = await response.json();
+                alert(data.detail || 'Erro ao excluir documento');
+            }
+        } catch (error) {
+            alert('Erro ao processar a requisição');
+        }
+    }
+}
+</script>
+{% endblock %} 

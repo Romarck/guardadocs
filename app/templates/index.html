@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Guarda Docs - Gerenciamento Seguro de Documentos{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 mb-3">Bem-vindo ao Guarda Docs</h1>
+        <p class="lead mb-4">Uma plataforma segura para gerenciar seus documentos acadêmicos.</p>
+        <div class="d-grid gap-2 d-md-block">
+            <a href="{{ url_for('register_page') }}" class="btn btn-primary btn-lg me-md-2">Registrar</a>
+            <a href="{{ url_for('login_page') }}" class="btn btn-outline-primary btn-lg">Login</a>
+        </div>
+    </div>
+
+    <div class="row g-4 py-5">
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-shield-alt fa-3x text-primary"></i>
+                    </div>
+                    <h3 class="card-title h5 text-center">Armazenamento Seguro</h3>
+                    <p class="card-text">Seus documentos são armazenados com segurança e podem ser acessados de qualquer lugar.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-share-alt fa-3x text-primary"></i>
+                    </div>
+                    <h3 class="card-title h5 text-center">Fácil Compartilhamento</h3>
+                    <p class="card-text">Compartilhe seus documentos com outros usuários de forma simples e segura.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-folder-open fa-3x text-primary"></i>
+                    </div>
+                    <h3 class="card-title h5 text-center">Organização Eficiente</h3>
+                    <p class="card-text">Mantenha seus documentos organizados com nossa interface intuitiva.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row py-5">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title h4 text-center mb-4">Por que escolher o Guarda Docs?</h3>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-3">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Armazenamento seguro na nuvem
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Acesso de qualquer dispositivo
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Interface intuitiva
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-3">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Compartilhamento seguro
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Backup automático
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Suporte dedicado
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,15 +1,9 @@
-# Arquivos de ambiente e configuração
-.env
-serviceAccountKey.json
-client_secret.json
-
-# Diretórios Python
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -21,26 +15,39 @@ lib64/
 parts/
 sdist/
 var/
+wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 
-# Ambiente virtual
+# Virtual Environment
 venv/
 ENV/
+env/
 
-# Arquivos de IDE
+# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-
-# Arquivos de upload
-Upload/
-
-# Logs
-*.log
-
-# Arquivos do sistema
 .DS_Store
-Thumbs.db
+
+# Project specific
+uploads/
+.env
+*.log
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Database
+*.db
+*.sqlite3
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Alembic
+alembic/versions/*
+!alembic/versions/.gitkeep
