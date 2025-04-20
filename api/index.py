@@ -2,7 +2,7 @@ from app.main import app
 from mangum import Mangum
 
 # Create handler for Vercel
-handler = Mangum(app, enable_proxy=True)
+handler = Mangum(app)
 
 # For local development
 if __name__ == "__main__":

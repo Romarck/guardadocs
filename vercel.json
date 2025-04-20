@@ -17,7 +17,6 @@
     }
   ],
   "env": {
-    "PYTHONPATH": ".",
-    "MANGUM_ENABLE_PROXY": "true"
+    "PYTHONPATH": "."
   }
 } 
