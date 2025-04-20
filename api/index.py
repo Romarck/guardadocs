@@ -1,5 +1,8 @@
 from app.main import app
 from http.server import BaseHTTPRequestHandler
+from starlette.requests import Request
+from starlette.responses import Response
+from starlette.datastructures import Headers
 import json
 
 class Handler(BaseHTTPRequestHandler):
@@ -16,24 +19,44 @@ class Handler(BaseHTTPRequestHandler):
         self._handle_request()
 
     def _handle_request(self):
-        # Create a mock event for the FastAPI app
-        event = {
+        # Create a Starlette request
+        scope = {
+            "type": "http",
+            "http_version": "1.1",
+            "method": self.command,
             "path": self.path,
-            "httpMethod": self.command,
-            "headers": dict(self.headers),
-            "queryStringParameters": {},
-            "body": self._get_body()
+            "headers": [(k.lower(), v) for k, v in self.headers.items()],
+            "query_string": self.path.split("?")[1].encode() if "?" in self.path else b"",
+            "client": ("127.0.0.1", 8000),
+            "server": ("127.0.0.1", 8000),
+            "scheme": "http",
+            "root_path": "",
+            "raw_path": self.path.encode(),
         }
 
-        # Call the FastAPI app
-        response = app(event, None)
-        
-        # Send the response
-        self.send_response(response["statusCode"])
-        for header, value in response.get("headers", {}).items():
-            self.send_header(header, value)
-        self.end_headers()
-        self.wfile.write(response.get("body", "").encode())
+        async def receive():
+            return {"type": "http.request", "body": self._get_body().encode()}
+
+        async def send(message):
+            if message["type"] == "http.response.start":
+                self.send_response(message["status"])
+                for header, value in message["headers"]:
+                    self.send_header(header.decode(), value.decode())
+                self.end_headers()
+            elif message["type"] == "http.response.body":
+                self.wfile.write(message["body"])
+
+        # Create request and get response
+        request = Request(scope, receive, send)
+        response = app(request)
+
+        # Send response
+        if isinstance(response, Response):
+            self.send_response(response.status_code)
+            for header, value in response.headers.items():
+                self.send_header(header, value)
+            self.end_headers()
+            self.wfile.write(response.body)
 
     def _get_body(self):
         content_length = int(self.headers.get("Content-Length", 0))
