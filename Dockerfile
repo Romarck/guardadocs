@@ -8,15 +8,15 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Copy requirements first to leverage Docker cache
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
 
-# Create upload directory
-RUN mkdir -p uploads
+# Create uploads directory
+RUN mkdir -p uploads && chmod 755 uploads
 
 # Create non-root user
 RUN useradd -m appuser && chown -R appuser:appuser /app
@@ -25,5 +25,5 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Run the application
-CMD ["python", "-m", "hypercorn", "app.main:app", "--bind", "0.0.0.0:8000", "--workers", "4"] 
+# Run migrations and start the application with Hypercorn
+CMD alembic upgrade head && hypercorn app.main:app --bind 0.0.0.0:8000 --workers 4 
