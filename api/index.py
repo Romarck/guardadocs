@@ -1,5 +1,9 @@
 from app.main import app
 from mangum import Mangum
 
-# Vercel serverless function handler
-handler = Mangum(app) 
+# Configure Mangum handler
+handler = Mangum(
+    app,
+    lifespan="off",
+    strip_stage_path=True
+) 
