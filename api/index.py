@@ -1,16 +1,17 @@
 from app.main import app
-from fastapi import Request
-from fastapi.responses import JSONResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-async def handler(request: Request):
-    try:
-        response = await app(request.scope, request.receive, request.send)
-        return response
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"detail": str(e)}
-        )
+async def handler(scope: Scope, receive: Receive, send: Send) -> None:
+    if scope["type"] == "lifespan":
+        while True:
+            message = await receive()
+            if message["type"] == "lifespan.startup":
+                await app(scope, receive, send)
+            if message["type"] == "lifespan.shutdown":
+                await app(scope, receive, send)
+                return
+    else:
+        await app(scope, receive, send)
 
 # For local development
 if __name__ == "__main__":
