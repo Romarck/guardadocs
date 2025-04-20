@@ -1,0 +1,7 @@
+{
+  "name": "guardadocs",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "mkdir -p dist && cp -r app/static/* dist/ && cp -r app/templates dist/"
+  }
+} 
