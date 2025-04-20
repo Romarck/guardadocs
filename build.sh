@@ -7,7 +7,11 @@ pip install -r requirements.txt
 mkdir -p static
 
 # Copy static files
-cp -r app/static/* static/
+if [ -d "app/static" ]; then
+  cp -r app/static/* static/
+fi
 
-# Start the application
-python -m hypercorn app.main:app --bind 0.0.0.0:8000 
+# Copy templates
+if [ -d "app/templates" ]; then
+  cp -r app/templates static/
+fi 
