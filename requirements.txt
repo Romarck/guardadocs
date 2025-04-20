@@ -1,7 +1,6 @@
 # FastAPI and core dependencies
 fastapi==0.109.0
 pydantic==2.6.1
-hypercorn==0.17.3
 uvicorn==0.27.1
 
 # Database
@@ -25,7 +24,7 @@ itsdangerous==2.1.2
 
 # Supabase and HTTP
 supabase==2.15.0
-httpx>=0.26.0,<0.29.0
+httpx==0.26.0
 
 # Environment variables
 python-dotenv==1.0.1
