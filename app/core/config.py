@@ -5,27 +5,38 @@ import os
 from pathlib import Path
 
 class Settings(BaseSettings):
-    # Database
-    DATABASE_URL: str
+    PROJECT_NAME: str = "GuardaDocs"
+    VERSION: str = "1.0.0"
+    API_V1_STR: str = "/api/v1"
     
-    # JWT
+    # Database
+    POSTGRES_SERVER: str
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
+    SQLALCHEMY_DATABASE_URI: Optional[str] = None
+    
+    # Security
     SECRET_KEY: str
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
     
     # Supabase
     SUPABASE_URL: str
     SUPABASE_KEY: str
-    SUPABASE_SERVICE_KEY: str
+    SUPABASE_JWT_SECRET: str
+    
+    # File Upload
+    MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024  # 5MB
+    
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/login/google/callback"
     
     # Storage
     STORAGE_TYPE: str = "supabase"
     UPLOAD_FOLDER: str = "uploads"
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
-    
-    # Google OAuth
-    GOOGLE_CLIENT_ID: str = ""
-    GOOGLE_CLIENT_SECRET: str = ""
     
     # Email
     SMTP_TLS: bool = True
@@ -52,8 +63,17 @@ class Settings(BaseSettings):
         return v
     
     class Config:
-        case_sensitive = True
         env_file = os.getenv("ENV_FILE", ".env")
         env_file_encoding = "utf-8"
+        case_sensitive = True
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        
+        if not self.SQLALCHEMY_DATABASE_URI and self.POSTGRES_DB:
+            self.SQLALCHEMY_DATABASE_URI = (
+                f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+                f"@{self.POSTGRES_SERVER}/{self.POSTGRES_DB}"
+            )
 
 settings = Settings() 

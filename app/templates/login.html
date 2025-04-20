@@ -11,7 +11,17 @@
                     <div class="text-center mb-4">
                         <i class="fas fa-user-circle fa-3x text-primary mb-3"></i>
                         <h3>Bem-vindo de volta!</h3>
-                        <p class="text-muted">Entre com sua conta para continuar</p>
+                        <p class="text-muted">Escolha como deseja entrar</p>
+                    </div>
+
+                    <div class="d-grid mb-4">
+                        <a href="/login/google" class="btn btn-danger btn-lg">
+                            <i class="fab fa-google me-2"></i>Continuar com Google
+                        </a>
+                    </div>
+
+                    <div class="text-center mb-4">
+                        <p class="text-muted">Ou entre com seu email</p>
                     </div>
 
                     {% if error %}
@@ -37,20 +47,16 @@
                             </div>
                         </div>
                         <div class="d-grid mb-3">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="fas fa-sign-in-alt me-2"></i>Entrar
                             </button>
                         </div>
                     </form>
 
                     <div class="text-center">
-                        <p class="text-muted mb-3">Ou entre com</p>
-                        <a href="/login/google" class="btn btn-outline-danger w-100 mb-3">
-                            <i class="fab fa-google me-2"></i>Continuar com Google
-                        </a>
                         <hr>
                         <p class="mb-0">
-                            Não tem uma conta? <a href="/register" class="text-decoration-none">Registrar</a>
+                            Não tem uma conta? <a href="/register" class="text-decoration-none">Criar Conta</a>
                         </p>
                     </div>
                 </div>
