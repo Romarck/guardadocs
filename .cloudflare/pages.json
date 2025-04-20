@@ -1,0 +1,21 @@
+{
+  "functions": {
+    "api/*": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "pattern": "/*",
+      "function": "api"
+    }
+  ],
+  "build": {
+    "command": "pip install -r requirements-cloudflare.txt",
+    "output": "app",
+    "environment": {
+      "PYTHON_VERSION": "3.11"
+    }
+  }
+} 
