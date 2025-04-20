@@ -1,86 +1,77 @@
 from app.main import app
-from http.server import BaseHTTPRequestHandler
-from starlette.requests import Request
-from starlette.responses import Response
-from starlette.datastructures import Headers
+import asyncio
 import json
 import logging
-import asyncio
+from urllib.parse import parse_qs
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class Handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        logger.info(f"Received GET request: {self.path}")
-        self._handle_request()
+async def handler(event, context):
+    """
+    Handle requests from Vercel serverless function
+    """
+    logger.info(f"Received event: {json.dumps(event, default=str)}")
+    
+    # Parse request information
+    path = event.get('path', '/')
+    http_method = event.get('httpMethod', 'GET')
+    headers = event.get('headers', {})
+    query_string = event.get('queryStringParameters', {})
+    body = event.get('body', '')
+    
+    # Convert query string to bytes
+    query_bytes = '&'.join(f"{k}={v}" for k, v in query_string.items()).encode()
+    
+    # Prepare ASGI scope
+    scope = {
+        'type': 'http',
+        'asgi': {'version': '3.0'},
+        'http_version': '1.1',
+        'method': http_method,
+        'scheme': 'https',
+        'path': path,
+        'raw_path': path.encode(),
+        'query_string': query_bytes,
+        'headers': [[k.lower().encode(), v.encode()] for k, v in headers.items()],
+        'client': ('127.0.0.1', 0),
+        'server': (None, None),
+    }
 
-    def do_POST(self):
-        logger.info(f"Received POST request: {self.path}")
-        self._handle_request()
+    # Prepare response holders
+    response = {}
+    send_queue = asyncio.Queue()
 
-    def do_PUT(self):
-        logger.info(f"Received PUT request: {self.path}")
-        self._handle_request()
+    async def receive():
+        return {
+            'type': 'http.request',
+            'body': body.encode() if body else b'',
+            'more_body': False,
+        }
 
-    def do_DELETE(self):
-        logger.info(f"Received DELETE request: {self.path}")
-        self._handle_request()
+    async def send(message):
+        await send_queue.put(message)
 
-    def _handle_request(self):
-        try:
-            # Create a Starlette request
-            scope = {
-                "type": "http",
-                "http_version": "1.1",
-                "method": self.command,
-                "path": self.path,
-                "headers": [(k.lower(), v) for k, v in self.headers.items()],
-                "query_string": self.path.split("?")[1].encode() if "?" in self.path else b"",
-                "client": ("127.0.0.1", 8000),
-                "server": ("127.0.0.1", 8000),
-                "scheme": "http",
-                "root_path": "",
-                "raw_path": self.path.encode(),
-            }
+    # Run ASGI application
+    await app(scope, receive, send)
 
-            logger.info(f"Created scope: {json.dumps(scope, default=str)}")
+    # Get response information
+    message = await send_queue.get()
+    if message['type'] == 'http.response.start':
+        response['statusCode'] = message['status']
+        response['headers'] = {
+            k.decode(): v.decode()
+            for k, v in message['headers']
+        }
 
-            async def receive():
-                body = self._get_body()
-                logger.info(f"Received body: {body}")
-                return {"type": "http.request", "body": body.encode()}
+    # Get response body
+    message = await send_queue.get()
+    if message['type'] == 'http.response.body':
+        response['body'] = message['body'].decode()
 
-            async def send(message):
-                logger.info(f"Sending message: {message['type']}")
-                if message["type"] == "http.response.start":
-                    self.send_response(message["status"])
-                    for header, value in message["headers"]:
-                        self.send_header(header.decode(), value.decode())
-                    self.end_headers()
-                elif message["type"] == "http.response.body":
-                    self.wfile.write(message["body"])
-
-            # Create event loop and run the app
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(app(scope, receive, send))
-            loop.close()
-
-        except Exception as e:
-            logger.error(f"Error handling request: {str(e)}", exc_info=True)
-            self.send_response(500)
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": str(e)}).encode())
-
-    def _get_body(self):
-        content_length = int(self.headers.get("Content-Length", 0))
-        if content_length > 0:
-            return self.rfile.read(content_length).decode()
-        return ""
-
-handler = Handler
+    logger.info(f"Sending response: {json.dumps(response, default=str)}")
+    return response
 
 # For local development
 if __name__ == "__main__":
