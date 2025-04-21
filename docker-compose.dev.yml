@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    restart: always
+    env_file:
+      - .env.dev
+    volumes:
+      - .:/app
+      - ./uploads:/app/uploads
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    networks:
+      - guardadocs-network
+    command: hypercorn app.main:app --bind 0.0.0.0:8000 --reload
+
+  db:
+    image: postgres:15
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-guardadocs}
+    ports:
+      - "5432:5432"
+    networks:
+      - guardadocs-network
+
+volumes:
+  postgres_data:
+
+networks:
+  guardadocs-network:
+    driver: bridge 
