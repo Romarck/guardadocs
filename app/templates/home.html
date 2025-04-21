@@ -52,7 +52,10 @@
                         </small>
                     </p>
                     <div class="btn-group">
-                        <a href="/api/v1/documents/{{ doc.id }}/download" class="btn btn-primary btn-sm">
+                        <a href="/documents/{{ doc.id }}/edit" class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit"></i> Editar
+                        </a>
+                        <a href="/api/v1/documents/{{ doc.id }}/download" class="btn btn-success btn-sm">
                             <i class="fas fa-download"></i> Baixar
                         </a>
                         <button onclick="deleteDocument({{ doc.id }})" class="btn btn-danger btn-sm">

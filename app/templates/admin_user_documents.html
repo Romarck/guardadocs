@@ -13,9 +13,14 @@
             <span class="badge bg-info me-3">
                 <i class="fas fa-file"></i> {{ documents|length }} documentos
             </span>
-            <a href="/admin" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i>Voltar
-            </a>
+            <div class="btn-group">
+                <a href="/users/{{ target_user.id }}/edit" class="btn btn-primary">
+                    <i class="fas fa-user-edit me-2"></i>Editar Usuário
+                </a>
+                <a href="/admin" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar
+                </a>
+            </div>
         </div>
     </div>
 
@@ -40,6 +45,7 @@
                         <tr>
                             <th>Nome</th>
                             <th>Título</th>
+                            <th>Descrição</th>
                             <th>Tamanho</th>
                             <th>Data de Upload</th>
                             <th>Ações</th>
@@ -53,18 +59,18 @@
                                 {{ doc.original_filename }}
                             </td>
                             <td>{{ doc.title or "Sem título" }}</td>
+                            <td>{{ doc.description or '-' }}</td>
                             <td>{{ (doc.file_size / 1024)|round|int }} KB</td>
                             <td>{{ doc.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="/api/v1/documents/{{ doc.id }}/download" 
-                                       class="btn btn-outline-primary"
-                                       title="Baixar">
+                                    <a href="/documents/{{ doc.id }}/edit" class="btn btn-outline-primary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="/api/v1/documents/{{ doc.id }}/download" class="btn btn-outline-success" title="Baixar">
                                         <i class="fas fa-download"></i>
                                     </a>
-                                    <button onclick="deleteDocument({{ doc.id }})"
-                                            class="btn btn-outline-danger"
-                                            title="Excluir">
+                                    <button onclick="deleteDocument({{ doc.id }})" class="btn btn-outline-danger" title="Excluir">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>

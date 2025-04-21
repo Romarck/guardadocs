@@ -20,8 +20,7 @@ from app.core.hashing import get_password_hash, verify_password
 from app.models import User as UserModel, Document
 from app.schemas import UserCreate, DocumentCreate, User as UserSchema
 from app.core.config import settings
-from app.core.storage import upload_file, delete_file, get_file_url
-from app.core.google_auth import google_login, google_callback
+from app.core.storage import save_upload_file, delete_file, get_file_path
 
 app = FastAPI(title="GuardaDocs")
 
@@ -188,21 +187,37 @@ async def register(
     password: str = Form(...)
 ):
     try:
+        # Verificar se o email já está registrado
         if db.query(UserModel).filter(UserModel.email == email).first():
             return templates.TemplateResponse(
                 "register.html",
                 {"request": request, "error": "Email já registrado", "user": None}
             )
             
+        # Criar novo usuário com todos os campos necessários
         user = UserModel(
             full_name=full_name,
             email=email,
-            hashed_password=get_password_hash(password)
+            hashed_password=get_password_hash(password),
+            is_active=True,
+            is_admin=False,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
         
+        try:
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        except Exception as db_error:
+            db.rollback()
+            print(f"Erro no banco de dados: {str(db_error)}")
+            return templates.TemplateResponse(
+                "register.html",
+                {"request": request, "error": "Erro ao criar conta no banco de dados", "user": None}
+            )
+        
+        # Criar token de acesso
         access_token = create_access_token(subject=user.email)
         response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
         response.set_cookie(
@@ -270,17 +285,13 @@ async def upload_document(
     if len(content) > settings.MAX_UPLOAD_SIZE:
         raise HTTPException(status_code=400, detail="Arquivo muito grande")
     
-    # Gera um nome único para o arquivo
-    file_ext = os.path.splitext(file.filename)[1]
-    storage_filename = f"{uuid.uuid4()}{file_ext}"
-    
     try:
-        # Faz upload do arquivo
-        await upload_file(content, storage_filename)
+        # Salva o arquivo localmente
+        original_filename, storage_filename = save_upload_file(file)
         
         # Cria o documento no banco
         document = Document(
-            original_filename=file.filename,
+            original_filename=original_filename,
             storage_filename=storage_filename,
             title=title,
             description=description,
@@ -298,7 +309,7 @@ async def upload_document(
     except Exception as e:
         # Se houver erro, tenta deletar o arquivo do storage
         try:
-            await delete_file(storage_filename)
+            delete_file(storage_filename)
         except:
             pass
         raise HTTPException(status_code=500, detail=str(e))
@@ -313,24 +324,24 @@ async def download_document(
     if not user:
         raise HTTPException(status_code=401, detail="Não autorizado")
     
-    print(f"Buscando documento com ID: {document_id} para o usuário: {user.id}")
     document = db.query(Document).filter(
         Document.id == document_id,
         Document.user_id == user.id
     ).first()
     
     if not document:
-        print(f"Documento não encontrado: {document_id}")
         raise HTTPException(status_code=404, detail="Documento não encontrado")
     
-    print(f"Documento encontrado: {document.original_filename}, storage_filename: {document.storage_filename}")
-    
     try:
-        url = await get_file_url(document.storage_filename)
-        print(f"URL gerada com sucesso: {url}")
-        return RedirectResponse(url=url)
+        file_path = await get_file_path(document.storage_filename)
+        return FileResponse(
+            path=file_path,
+            filename=document.original_filename,
+            media_type=document.content_type
+        )
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado no servidor")
     except Exception as e:
-        print(f"Erro ao gerar URL: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/v1/documents/{document_id}")
@@ -687,26 +698,6 @@ async def admin_delete_document(
     db.commit()
     return {"message": "Documento excluído com sucesso"}
 
-@app.get("/login/google")
-async def google_auth_login(request: Request):
-    """Inicia o processo de login com o Google."""
-    try:
-        # URI de redirecionamento explícito
-        redirect_uri = request.url_for('google_callback')
-        return await google_login(request)
-    except Exception as e:
-        print(f"Erro ao iniciar login com Google: {str(e)}")
-        return RedirectResponse(url='/login?error=google_auth_failed', status_code=303)
-
-@app.get("/login/google/callback", name="google_callback")
-async def google_auth_callback(request: Request, db: Session = Depends(get_db_dependency)):
-    """Processa o retorno do login com Google."""
-    try:
-        return await google_callback(request, db)
-    except Exception as e:
-        print(f"Erro no callback do Google: {str(e)}")
-        return RedirectResponse(url='/login?error=callback_failed', status_code=303)
-
 @app.get("/profile", response_class=HTMLResponse)
 async def profile_page(
     request: Request,
@@ -737,5 +728,305 @@ async def profile_page(
                 "request": request,
                 "error": f"Erro ao carregar perfil: {str(e)}",
                 "user": None
+            }
+        )
+
+@app.get("/users/edit", response_class=HTMLResponse)
+async def edit_user_page(
+    request: Request,
+    db: Session = Depends(get_db_dependency)
+):
+    try:
+        user = await get_current_user_from_request(request, db)
+        if not user:
+            return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+        
+        return templates.TemplateResponse(
+            "edit_user.html",
+            {
+                "request": request,
+                "user": user,
+                "success": request.query_params.get("success")
+            }
+        )
+    except Exception as e:
+        print(f"Erro ao carregar página de edição: {str(e)}")
+        return templates.TemplateResponse(
+            "error.html",
+            {
+                "request": request,
+                "error": f"Erro ao carregar página de edição: {str(e)}",
+                "user": None
+            }
+        )
+
+@app.post("/users/edit")
+async def edit_user(
+    request: Request,
+    db: Session = Depends(get_db_dependency),
+    full_name: str = Form(...),
+    email: str = Form(...),
+    new_password: str = Form(None)
+):
+    try:
+        user = await get_current_user_from_request(request, db)
+        if not user:
+            return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+        
+        # Verifica se o email já está em uso por outro usuário
+        existing_user = db.query(UserModel).filter(
+            UserModel.email == email,
+            UserModel.id != user.id
+        ).first()
+        if existing_user:
+            return templates.TemplateResponse(
+                "edit_user.html",
+                {
+                    "request": request,
+                    "user": user,
+                    "error": "Este email já está em uso"
+                }
+            )
+        
+        # Atualiza os dados do usuário
+        user.full_name = full_name
+        user.email = email
+        if new_password:
+            user.hashed_password = get_password_hash(new_password)
+        
+        db.commit()
+        
+        return RedirectResponse(
+            url="/users/edit?success=Perfil atualizado com sucesso",
+            status_code=status.HTTP_302_FOUND
+        )
+    except Exception as e:
+        print(f"Erro ao atualizar usuário: {str(e)}")
+        return templates.TemplateResponse(
+            "edit_user.html",
+            {
+                "request": request,
+                "user": user,
+                "error": f"Erro ao atualizar perfil: {str(e)}"
+            }
+        )
+
+@app.get("/documents/{document_id}/edit", response_class=HTMLResponse)
+async def edit_document_page(
+    document_id: int,
+    request: Request,
+    db: Session = Depends(get_db_dependency)
+):
+    try:
+        user = await get_current_user_from_request(request, db)
+        if not user:
+            return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+        
+        document = db.query(Document).filter(
+            Document.id == document_id,
+            Document.user_id == user.id
+        ).first()
+        
+        if not document:
+            return templates.TemplateResponse(
+                "error.html",
+                {
+                    "request": request,
+                    "user": user,
+                    "error": "Documento não encontrado"
+                }
+            )
+        
+        return templates.TemplateResponse(
+            "edit_document.html",
+            {
+                "request": request,
+                "user": user,
+                "document": document,
+                "success": request.query_params.get("success")
+            }
+        )
+    except Exception as e:
+        print(f"Erro ao carregar página de edição do documento: {str(e)}")
+        return templates.TemplateResponse(
+            "error.html",
+            {
+                "request": request,
+                "user": user,
+                "error": f"Erro ao carregar página de edição: {str(e)}"
+            }
+        )
+
+@app.post("/documents/{document_id}/edit")
+async def edit_document(
+    document_id: int,
+    request: Request,
+    db: Session = Depends(get_db_dependency),
+    title: str = Form(...),
+    description: str = Form(None),
+    file: UploadFile = File(None)
+):
+    try:
+        user = await get_current_user_from_request(request, db)
+        if not user:
+            return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+        
+        document = db.query(Document).filter(
+            Document.id == document_id,
+            Document.user_id == user.id
+        ).first()
+        
+        if not document:
+            raise HTTPException(status_code=404, detail="Documento não encontrado")
+        
+        # Atualiza os dados básicos
+        document.title = title
+        document.description = description
+        
+        # Se um novo arquivo foi enviado
+        if file and file.filename:
+            # Verifica o tamanho do arquivo
+            content = await file.read()
+            if len(content) > settings.MAX_UPLOAD_SIZE:
+                return templates.TemplateResponse(
+                    "edit_document.html",
+                    {
+                        "request": request,
+                        "user": user,
+                        "document": document,
+                        "error": "Arquivo muito grande"
+                    }
+                )
+            
+            # Remove o arquivo antigo
+            try:
+                await delete_file(document.storage_filename)
+            except Exception as e:
+                print(f"Erro ao deletar arquivo antigo: {str(e)}")
+            
+            # Salva o novo arquivo
+            original_filename, storage_filename = save_upload_file(file)
+            document.original_filename = original_filename
+            document.storage_filename = storage_filename
+            document.content_type = file.content_type
+            document.file_size = len(content)
+        
+        db.commit()
+        
+        return RedirectResponse(
+            url=f"/documents/{document_id}/edit?success=Documento atualizado com sucesso",
+            status_code=status.HTTP_302_FOUND
+        )
+    except Exception as e:
+        print(f"Erro ao atualizar documento: {str(e)}")
+        return templates.TemplateResponse(
+            "edit_document.html",
+            {
+                "request": request,
+                "user": user,
+                "document": document,
+                "error": f"Erro ao atualizar documento: {str(e)}"
+            }
+        )
+
+@app.get("/users/{user_id}/edit", response_class=HTMLResponse)
+async def admin_edit_user_page(
+    user_id: int,
+    request: Request,
+    db: Session = Depends(get_db_dependency)
+):
+    try:
+        # Verifica se o usuário é admin
+        current_user = await get_current_admin(request, db)
+        
+        # Busca o usuário a ser editado
+        target_user = db.query(UserModel).filter(UserModel.id == user_id).first()
+        if not target_user:
+            return templates.TemplateResponse(
+                "error.html",
+                {
+                    "request": request,
+                    "user": current_user,
+                    "error": "Usuário não encontrado"
+                }
+            )
+        
+        return templates.TemplateResponse(
+            "admin_edit_user.html",
+            {
+                "request": request,
+                "user": current_user,
+                "target_user": target_user,
+                "success": request.query_params.get("success")
+            }
+        )
+    except Exception as e:
+        print(f"Erro ao carregar página de edição: {str(e)}")
+        return templates.TemplateResponse(
+            "error.html",
+            {
+                "request": request,
+                "error": f"Erro ao carregar página de edição: {str(e)}",
+                "user": current_user
+            }
+        )
+
+@app.post("/users/{user_id}/edit")
+async def admin_edit_user(
+    user_id: int,
+    request: Request,
+    db: Session = Depends(get_db_dependency),
+    full_name: str = Form(...),
+    email: str = Form(...),
+    new_password: str = Form(None),
+    is_admin: bool = Form(False)
+):
+    try:
+        # Verifica se o usuário é admin
+        current_user = await get_current_admin(request, db)
+        
+        # Busca o usuário a ser editado
+        target_user = db.query(UserModel).filter(UserModel.id == user_id).first()
+        if not target_user:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        
+        # Verifica se o email já está em uso por outro usuário
+        existing_user = db.query(UserModel).filter(
+            UserModel.email == email,
+            UserModel.id != user_id
+        ).first()
+        if existing_user:
+            return templates.TemplateResponse(
+                "admin_edit_user.html",
+                {
+                    "request": request,
+                    "user": current_user,
+                    "target_user": target_user,
+                    "error": "Este email já está em uso"
+                }
+            )
+        
+        # Atualiza os dados do usuário
+        target_user.full_name = full_name
+        target_user.email = email
+        if new_password:
+            target_user.hashed_password = get_password_hash(new_password)
+        target_user.is_admin = is_admin
+        
+        db.commit()
+        
+        return RedirectResponse(
+            url=f"/users/{user_id}/edit?success=Usuário atualizado com sucesso",
+            status_code=status.HTTP_302_FOUND
+        )
+    except Exception as e:
+        print(f"Erro ao atualizar usuário: {str(e)}")
+        return templates.TemplateResponse(
+            "admin_edit_user.html",
+            {
+                "request": request,
+                "user": current_user,
+                "target_user": target_user,
+                "error": f"Erro ao atualizar usuário: {str(e)}"
             }
         ) 

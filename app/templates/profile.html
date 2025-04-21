@@ -3,76 +3,73 @@
 {% block title %}Perfil - GuardaDocs{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container mt-4">
     <div class="row">
-        <!-- Informações do Perfil -->
         <div class="col-md-4">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <div class="text-center mb-4">
                         <i class="fas fa-user-circle fa-4x text-primary"></i>
-                        <h3 class="mt-3">{{ user.full_name }}</h3>
+                        <h4 class="mt-3">{{ user.full_name }}</h4>
                         <p class="text-muted">{{ user.email }}</p>
+                        <a href="/users/edit" class="btn btn-primary">
+                            <i class="fas fa-user-edit me-2"></i>Editar Perfil
+                        </a>
                     </div>
-                    
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="fas fa-file me-2"></i>Total de Documentos</span>
-                            <span class="badge bg-primary rounded-pill">{{ documents|length }}</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="fas fa-calendar me-2"></i>Membro desde</span>
-                            <span class="text-muted">{{ user.created_at.strftime('%d/%m/%Y') }}</span>
-                        </div>
-                        {% if user.is_admin %}
-                        <div class="list-group-item">
-                            <span class="badge bg-primary">
-                                <i class="fas fa-user-shield me-1"></i>Administrador
-                            </span>
-                        </div>
-                        {% endif %}
+                    <hr>
+                    <div class="small text-muted">
+                        <p><strong>Membro desde:</strong> {{ user.created_at.strftime('%d/%m/%Y') }}</p>
+                        <p><strong>Último acesso:</strong> {{ user.last_login.strftime('%d/%m/%Y %H:%M') if user.last_login else 'Nunca' }}</p>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Documentos Recentes -->
         <div class="col-md-8">
             <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Documentos Recentes</h5>
-                </div>
                 <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="mb-0">Meus Documentos</h4>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                            <i class="fas fa-upload me-2"></i>Enviar Documento
+                        </button>
+                    </div>
+
+                    {% if error %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endif %}
+
                     {% if documents %}
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle">
+                        <table class="table table-hover">
                             <thead>
                                 <tr>
                                     <th>Nome</th>
+                                    <th>Descrição</th>
                                     <th>Tamanho</th>
                                     <th>Data</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for doc in documents[:5] %}
+                                {% for doc in documents %}
                                 <tr>
-                                    <td>
-                                        <i class="fas fa-file me-2 text-primary"></i>
-                                        {{ doc.original_filename }}
-                                    </td>
-                                    <td>{{ (doc.file_size / 1024)|round|int }} KB</td>
+                                    <td>{{ doc.title or doc.original_filename }}</td>
+                                    <td>{{ doc.description or '-' }}</td>
+                                    <td>{{ '{:.1f}'.format(doc.file_size / 1024) }} KB</td>
                                     <td>{{ doc.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="/api/v1/documents/{{ doc.id }}/download" 
-                                               class="btn btn-outline-primary"
-                                               title="Baixar">
+                                        <div class="btn-group">
+                                            <a href="/documents/{{ doc.id }}/edit" class="btn btn-sm btn-outline-primary" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="/api/v1/documents/{{ doc.id }}/download" class="btn btn-sm btn-outline-success" title="Baixar">
                                                 <i class="fas fa-download"></i>
                                             </a>
-                                            <button onclick="deleteDocument({{ doc.id }})"
-                                                    class="btn btn-outline-danger"
-                                                    title="Excluir">
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Excluir"
+                                                onclick="deleteDocument({{ doc.id }})">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
@@ -82,20 +79,10 @@
                             </tbody>
                         </table>
                     </div>
-                    {% if documents|length > 5 %}
-                    <div class="text-center mt-3">
-                        <a href="/documents" class="btn btn-outline-primary">
-                            <i class="fas fa-list me-2"></i>Ver Todos
-                        </a>
-                    </div>
-                    {% endif %}
                     {% else %}
                     <div class="text-center py-4">
-                        <i class="fas fa-file-upload fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">Você ainda não possui documentos.</p>
-                        <a href="/" class="btn btn-primary">
-                            <i class="fas fa-upload me-2"></i>Fazer Upload
-                        </a>
+                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Você ainda não tem documentos</p>
                     </div>
                     {% endif %}
                 </div>
@@ -103,26 +90,54 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Upload -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadModalLabel">Enviar Documento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/api/v1/documents/" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Título</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descrição (opcional)</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Arquivo</label>
+                        <input type="file" class="form-control" id="file" name="file" required>
+                        <div class="form-text">Tamanho máximo: {{ '{:.1f}'.format(settings.MAX_UPLOAD_SIZE / 1024 / 1024) }} MB</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Enviar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-async function deleteDocument(documentId) {
+function deleteDocument(id) {
     if (confirm('Tem certeza que deseja excluir este documento?')) {
-        try {
-            const response = await fetch(`/api/v1/documents/${documentId}`, {
-                method: 'DELETE'
-            });
-            
+        fetch(`/api/v1/documents/${id}`, {
+            method: 'DELETE',
+        }).then(response => {
             if (response.ok) {
                 window.location.reload();
             } else {
-                const data = await response.json();
-                alert(data.detail || 'Erro ao excluir documento');
+                alert('Erro ao excluir documento');
             }
-        } catch (error) {
-            alert('Erro ao processar a requisição');
-        }
+        });
     }
 }
 </script>

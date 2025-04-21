@@ -10,34 +10,17 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # Database
-    POSTGRES_SERVER: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
-    DATABASE_URL: Optional[str] = None
+    DATABASE_URL: str = "sqlite:///./guarda_docs.db"
     SQLALCHEMY_DATABASE_URI: Optional[str] = None
     
     # Security
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
-    
-    # Supabase
-    SUPABASE_URL: str
-    SUPABASE_KEY: str
-    SUPABASE_JWT_SECRET: str
+    ALGORITHM: str = "HS256"
     
     # File Upload
-    MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024  # 5MB
-    
-    # Google OAuth
-    GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
-    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/login/google/callback"
-    
-    # Storage
-    STORAGE_TYPE: str = "supabase"
-    UPLOAD_FOLDER: str = "uploads"
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
+    UPLOAD_FOLDER: str = "uploads"
     
     # Email
     SMTP_TLS: bool = True
@@ -54,15 +37,6 @@ class Settings(BaseSettings):
         path.mkdir(parents=True, exist_ok=True)
         return v
     
-    @validator("MAX_UPLOAD_SIZE", pre=True)
-    def parse_max_upload_size(cls, v):
-        if isinstance(v, str):
-            try:
-                return int(v.split("#")[0].strip())
-            except (ValueError, IndexError):
-                return 10485760  # 10MB
-        return v
-    
     class Config:
         env_file = os.getenv("ENV_FILE", ".env")
         env_file_encoding = "utf-8"
@@ -70,14 +44,6 @@ class Settings(BaseSettings):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        
-        if not self.DATABASE_URL and self.POSTGRES_DB:
-            self.DATABASE_URL = (
-                f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
-                f"@{self.POSTGRES_SERVER}/{self.POSTGRES_DB}"
-            )
-        
-        if not self.SQLALCHEMY_DATABASE_URI:
-            self.SQLALCHEMY_DATABASE_URI = self.DATABASE_URL
+        self.SQLALCHEMY_DATABASE_URI = self.DATABASE_URL
 
 settings = Settings() 
